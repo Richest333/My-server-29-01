@@ -8,20 +8,27 @@ const app = express();
 // Разрешаем запросы со всех доменов
 app.use(cors()); 
 
-// Загружаем файлы сертификата
-const httpsOptions = {
-    key: fs.readFileSync('localhost-key.pem'), // Было localhost+2-key.pem
-    cert: fs.readFileSync('localhost.pem')    // Было localhost+2.pem
-};
+// Проверяем наличие сертификатов (если они загружаются из файлов)
+const httpsOptions = process.env.NODE_ENV === 'production' ? {
+    key: fs.readFileSync('localhost-key.pem'),  // Путь к ключу
+    cert: fs.readFileSync('localhost.pem')      // Путь к сертификату
+} : {};  // В production мы будем использовать HTTPS, а в другом случае - только HTTP
 
 // Пример маршрута
 app.get('/', (req, res) => {
     res.send('HTTPS сервер работает!');
 });
 
-// Запуск HTTPS-сервера
+// Запуск сервера
 const HOST = '0.0.0.0'; // Слушаем все IP
-const PORT = 443; // Можно поменять на другой порт, если 443 занят
-https.createServer(httpsOptions, app).listen(PORT, HOST, () => {
-    console.log(`Сервер запущен: https://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 443; // Используем PORT, предоставленный Render или 443 по умолчанию
+
+if (httpsOptions.key && httpsOptions.cert) {
+    https.createServer(httpsOptions, app).listen(PORT, HOST, () => {
+        console.log(`Сервер запущен: https://localhost:${PORT}`);
+    });
+} else {
+    app.listen(PORT, HOST, () => {
+        console.log(`Сервер работает без HTTPS на http://localhost:${PORT}`);
+    });
+}
