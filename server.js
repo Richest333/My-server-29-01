@@ -1,35 +1,27 @@
-const express = require('express');
 const https = require('https');
 const fs = require('fs');
-const helmet = require('helmet');
-const cors = require('cors');
-const morgan = require('morgan');
+const express = require('express');
+const cors = require('cors'); // Подключаем CORS
+
 const app = express();
 
-// Путь к сертификатам
-const privateKey = fs.readFileSync('E:/my-server/localhost+2-key.pem', 'utf8');
-const certificate = fs.readFileSync('E:/my-server/localhost+2.pem', 'utf8');
+// Разрешаем запросы со всех доменов
+app.use(cors()); 
 
-const credentials = { key: privateKey, cert: certificate };
+// Загружаем файлы сертификата
+const httpsOptions = {
+    key: fs.readFileSync('localhost-key.pem'), // Было localhost+2-key.pem
+    cert: fs.readFileSync('localhost.pem')    // Было localhost+2.pem
+};
 
-// Настройки безопасности с помощью Helmet
-app.use(helmet());
-
-// Разрешаем CORS
-app.use(cors());
-
-// Логирование запросов
-app.use(morgan('combined'));
-
-// Парсинг JSON данных
-app.use(express.json());
-
-// Стандартный маршрут для проверки
+// Пример маршрута
 app.get('/', (req, res) => {
-  res.send('Hello World over HTTPS!');
+    res.send('HTTPS сервер работает!');
 });
 
-// Запуск сервера с HTTPS
-https.createServer(credentials, app).listen(3001, () => {
-  console.log('Server is running securely on port 3001');
+// Запуск HTTPS-сервера
+const HOST = '0.0.0.0'; // Слушаем все IP
+const PORT = 443; // Можно поменять на другой порт, если 443 занят
+https.createServer(httpsOptions, app).listen(PORT, HOST, () => {
+    console.log(`Сервер запущен: https://localhost:${PORT}`);
 });
